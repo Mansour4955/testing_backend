@@ -17,11 +17,17 @@ import fileUpload from "../middlewares/fileUpload.js";
 const router = express.Router();
 
 router.post("/", verifyToken, fileUpload.single("content"), createEvent);
-router.get("/", getAllEvents);
+router.get("/",verifyToken, getAllEvents);
 router.get("/public", getAllPublicEvents);
 router.get("/:id", validateObjectId, getEventById);
 
-router.patch("/:id", validateObjectId, verifyToken, fileUpload.single("content"), updateEvent);
+router.patch(
+  "/:id",
+  validateObjectId,
+  verifyToken,
+  fileUpload.single("content"),
+  updateEvent
+);
 
 router.patch("/join/:id", validateObjectId, verifyToken, joinEvent);
 router.patch("/leave/:id", validateObjectId, verifyToken, leaveEvent);

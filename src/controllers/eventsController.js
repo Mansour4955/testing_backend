@@ -5,6 +5,7 @@ import Event, {
 import User from "../models/User.js";
 import Comment from "../models/Comment.js";
 import uploadFile from "../helpers/addVedioImageHelper.js";
+import removeAddVideoImageUpload from "../helpers/removeAddVideoImageHelper.js";
 
 /**-----------------------------------------------
  * @desc    Create a new Event
@@ -69,9 +70,24 @@ export const updateEvent = async (req, res) => {
         .status(401)
         .json({ message: "Unauthorized to update this event" });
     }
+
+    const { content, ...rest } = req.body;
+
+    let contentData;
+    if (req.file) {
+      contentData = await removeAddVideoImageUpload(req.file, event.content);
+    }
+
+    // Prepare updated data
+    const updatedData = {
+      content: contentData ? contentData : event.content,
+      ...rest,
+    };
+
+    // Update event
     const updateEvent = await Event.findByIdAndUpdate(
-      id,
-      { $set: req.body },
+      req.params.id,
+      { $set: updatedData },
       { new: true }
     ).populate("host accessOnlyTo participants");
     res.status(200).json(updateEvent);
@@ -117,7 +133,7 @@ export const deleteEvent = async (req, res) => {
 export const getEventById = async (req, res) => {
   try {
     const event = await Event.findById(req.params.id)
-      .populate("host accessOnlyTo participants")
+      .populate("host accessOnlyTo participants likes")
       .lean();
 
     if (!event) return res.status(404).json({ message: "Event not found" });
@@ -220,7 +236,7 @@ export const getAllEvents = async (req, res) => {
     }
     // Fetch events based on the filter
     const events = await Event.find(filterQuery)
-      .populate("host accessOnlyTo participants")
+      .populate("host accessOnlyTo participants likes")
       .skip(skip)
       .limit(limit)
       .sort({ date: -1 }); // Sort by date, latest first
@@ -257,7 +273,7 @@ export const getAllPublicEvents = async (req, res) => {
 
   try {
     const events = await Event.find({ access: "public" })
-      .populate("host")
+      .populate("host likes")
       .skip(skip)
       .limit(limit)
       .sort({ date: -1 }); // Sort by date, latest first
@@ -289,9 +305,9 @@ export const getAllPublicEvents = async (req, res) => {
  ------------------------------------------------*/
 export const joinEvent = async (req, res) => {
   try {
-    const event = await Event.findById(req.params.id)
-      .populate("host accessOnlyTo participants")
-      .lean();
+    const event = await Event.findById(req.params.id).populate(
+      "host accessOnlyTo participants likes"
+    );
 
     if (!event) return res.status(404).json({ message: "Event not found" });
 
@@ -334,9 +350,9 @@ export const joinEvent = async (req, res) => {
  ------------------------------------------------*/
 export const leaveEvent = async (req, res) => {
   try {
-    const event = await Event.findById(req.params.id)
-      .populate("host accessOnlyTo participants")
-      .lean();
+    const event = await Event.findById(req.params.id).populate(
+      "host accessOnlyTo participants likes"
+    );
 
     if (!event) return res.status(404).json({ message: "Event not found" });
 
@@ -398,7 +414,7 @@ export const toggleLike = async (req, res) => {
 
     // Populate the event with related data
     const toggledEvent = await Event.findById(event._id).populate(
-      "host accessOnlyTo participants"
+      "host accessOnlyTo participants likes"
     );
 
     // Return the updated event along with the total like count
