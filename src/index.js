@@ -3,31 +3,15 @@ import { createServer } from "http";
 import { Server } from "socket.io";
 import connectToDb from "./config/connectedToDb.js";
 import consola from "consola";
-import ProfessionalsAuth from "./routes/professionalsAuth.js";
-import Professionals from "./routes/professionals.js";
 import Notifications from "./routes/notifications.js";
-import Reviews from "./routes/reviews.js";
 import UsersAuth from "./routes/usersAuth.js";
 import Users from "./routes/users.js";
-import Chats from "./routes/chats.js";
-import Posts from "./routes/posts.js";
-import Messages from "./routes/messages.js";
 import Comments from "./routes/comments.js";
 import Replies from "./routes/replies.js";
-import Schedules from "./routes/schedules.js";
-import NormalSchedules from "./routes/normalSchedules.js";
-import Ads from "./routes/ads.js";
-import Sponsorships from "./routes/sponsorships.js";
-import webhookRouter from "./routes/subscription.js";
+import Events from "./routes/events.js";
 import { errorHandler, notFound } from "./middlewares/error.js";
-import bodyParser from "body-parser";
 import cors from "cors";
 import dotenv from "dotenv";
-import {
-  handleSocketConnections,
-  setUserOffline,
-  setUserOnline,
-} from "./socket/ChatSocketHandler.js";
 import cleanUpFolder from "./middlewares/cleanUpFiles.js";
 import helmet from "helmet";
 import xss from "xss-clean";
@@ -64,32 +48,15 @@ const io = new Server(httpServer, {
 });
 
 // Middleware
-app.use(
-  bodyParser.json({
-    verify: (req, res, buf) => {
-      req.rawBody = buf; // Assign the raw buffer to req.rawBody
-    },
-  })
-);
 app.use(cors({ origin: "*" }));
 
 // Routes
-app.use("/api/webhook", webhookRouter);
-app.use("/api/professional-auth", ProfessionalsAuth);
-app.use("/api/professionals", Professionals);
 app.use("/api/user-auth", UsersAuth);
 app.use("/api/users", Users);
+app.use("/api/events", Events);
 app.use("/api/notifications", Notifications);
-app.use("/api/reviews", Reviews);
-app.use("/api/chats", Chats);
-app.use("/api/messages", Messages);
 app.use("/api/comments", Comments);
-app.use("/api/posts", Posts);
 app.use("/api/replies", Replies);
-app.use("/api/schedules", Schedules);
-app.use("/api/normal_schedules", NormalSchedules);
-app.use("/api/ads", Ads);
-app.use("/api/sponsorships", Sponsorships);
 
 // Error Handler Middleware
 app.use(notFound);
@@ -100,7 +67,6 @@ const userToSocketMap = {}; // { userId: socketId }
 const socketToUserMap = {}; // { socketId: userId }
 // Socket.io Connection Handling
 io.on("connection", (socket) => {
-  handleSocketConnections(socket); // Use the socket event handlers
   console.log(`User connected: ${socket.id}`);
 
   // Listen for login of the user/professional ID
@@ -119,7 +85,6 @@ io.on("connection", (socket) => {
         socketToUserMap[socket.id] = userId;
         console.log(`User ${userId} updated to new socket ID: ${socket.id}`);
       }
-      await setUserOnline(userId);
     } catch (error) {
       console.error("Error during user registration:", error.message);
     }
@@ -128,7 +93,6 @@ io.on("connection", (socket) => {
   socket.on("disconnect", async () => {
     const userId = socketToUserMap[socket.id];
     if (userId) {
-      await setUserOffline(userId);
       delete userToSocketMap[userId];
     }
     delete socketToUserMap[socket.id];

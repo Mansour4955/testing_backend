@@ -129,7 +129,7 @@ export const getEventById = async (req, res) => {
  * @desc    Get All events with Pagination and User-based Filtering
  * @route   /api/events?filter&page&limit
  * @method  GET
- * @access  public
+ * @access  private (only sign in users)
  ------------------------------------------------*/
 export const getAllEvents = async (req, res) => {
   const { filter = "all", status } = req.query; // Default filter is 'all'
@@ -211,6 +211,43 @@ export const getAllEvents = async (req, res) => {
 
     // Get the total number of events for this query
     const totalEvents = await Event.countDocuments(filterQuery);
+
+    // Return the paginated response
+    res.status(200).json({
+      events,
+      totalEvents,
+      totalPages: Math.ceil(totalEvents / limit), // Total number of pages
+      currentPage: page,
+      limit,
+      hasMore: page < Math.ceil(totalEvents / limit), // Whether more pages exist
+    });
+  } catch (err) {
+    res
+      .status(500)
+      .json({ message: "Internal Server Error", error: err.message });
+  }
+};
+
+/**-----------------------------------------------
+ * @desc    Get All events with Pagination 
+ * @route   /api/events/public
+ * @method  GET
+ * @access  public
+ ------------------------------------------------*/
+export const getAllPublicEvents = async (req, res) => {
+  const page = parseInt(req.query.page) || 1; // Default page is 1
+  const limit = parseInt(req.query.limit) || 10; // Default limit is 10 events per page
+  const skip = (page - 1) * limit; // Calculate the number of events to skip
+
+  try {
+    const events = await Event.find({ access: "public" })
+      .populate("host")
+      .skip(skip)
+      .limit(limit)
+      .sort({ date: -1 }); // Sort by date, latest first
+
+    // Get the total number of events for this query
+    const totalEvents = await Event.countDocuments({ access: "public" });
 
     // Return the paginated response
     res.status(200).json({
