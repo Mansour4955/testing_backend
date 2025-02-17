@@ -24,9 +24,6 @@ export const register = async (req, res) => {
     email,
     password,
     profileImage,
-    companyProfileImage,
-    companyCoverImage,
-    settings,
     ...rest
   } = req.body;
 
@@ -40,31 +37,9 @@ export const register = async (req, res) => {
 
     // Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
-    // default paypal
-    const defaultPaypal = {
-      paypalCustomerId: "", // PayPal's unique customer ID
-      paypalSubscriptionId: "", // PayPal's subscription ID
-      paypalSubscriptionStatus: "INACTIVE", // Default status for subscription
-      paypalPlan: "", // Plan type (e.g., "premium_professional")
-      paypalSubscriptionPeriod: "", // Subscription period (e.g., "monthly", "quarterly", "yearly")
-      paypalSubscriptionPrice: 0, // Subscription price
-      paypalSubscriptionStart: "", // Subscription start date
-      paypalSubscriptionEnd: "", // Subscription end date
-      paypalInvoiceSettings: {
-        billingEmail: "", // Email for billing purposes
-        billingCity: "", // City for billing
-        billingCountry: "", // Country for billing
-      },
-      paypalPaymentMethod: "", // Payment method details (e.g., PayPal account ID or funding source)
-    };
     // Initialize images
     const defaultImagesData = { url: "", publicId: null };
-    const defaultSettings = {
-      isAcceptingToShowUpOnline: true,
-    };
     let profileImageData;
-    let companyProfileImageData;
-    let companyCoverImageData;
 
     if (req.files?.profileImage?.[0]) {
       try {
@@ -75,33 +50,11 @@ export const register = async (req, res) => {
         return res.status(400).json({ message: err.message });
       }
     }
-    if (req.files?.companyProfileImage?.[0]) {
-      try {
-        companyProfileImageData = req.files?.companyProfileImage?.[0]
-          ? await uploadImage(req.files?.companyProfileImage?.[0])
-          : defaultImagesData;
-      } catch (err) {
-        return res.status(400).json({ message: err.message });
-      }
-    }
-    if (req.files?.companyCoverImage?.[0]) {
-      try {
-        companyCoverImageData = req.files?.companyCoverImage?.[0]
-          ? await uploadImage(req.files?.companyCoverImage?.[0])
-          : defaultImagesData;
-      } catch (err) {
-        return res.status(400).json({ message: err.message });
-      }
-    }
 
     const userData = {
       email,
       password: hashedPassword,
-      settings: defaultSettings,
       profileImage: profileImageData,
-      companyProfileImage: companyProfileImageData,
-      companyCoverImage: companyCoverImageData,
-      paypal: defaultPaypal,
       ...rest,
     };
 
@@ -148,9 +101,9 @@ export const login = async (req, res) => {
     const token = jwt.sign(
       {
         id: user._id,
-        role: user.role,
+        isAdmin: user.isAdmin,
       },
-      process.env.JWT_SECRET,
+      process.env.JWT_SECRET
     );
 
     res.status(200).json({ message: "Login successful", token, id: user._id });
