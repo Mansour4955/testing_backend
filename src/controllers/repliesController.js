@@ -24,9 +24,7 @@ export const createReply = async (req, res) => {
     // Validate and find the parent (Comment or Reply)
     const { parentId } = req.body;
     if (!parentId) {
-      return res
-        .status(400)
-        .json({ message: "ParentId is required" });
+      return res.status(400).json({ message: "ParentId is required" });
     }
 
     const parentComment = await Comment.findById(parentId);
@@ -37,7 +35,7 @@ export const createReply = async (req, res) => {
     else if (parentReply) replyModel = "Reply";
     else return res.status(404).json({ message: "ParentId not found" });
 
-    const parent = parentComment || parentReply
+    const parent = parentComment || parentReply;
     if (!parent) return res.status(404).json({ message: "Parent not found" });
 
     // Prepare the request body for creating a reply
@@ -63,8 +61,10 @@ export const createReply = async (req, res) => {
         model: ["Comment", "Reply"],
       })
       .populate("likes childReplies user");
-    parent.childReplies.push(reply._id);
-    await parent.save();
+    if (replyModel === "Reply") {
+      parent.childReplies.push(reply._id);
+      await parent.save();
+    }
 
     res.status(201).json(reply);
   } catch (err) {
@@ -102,6 +102,7 @@ export const updateReply = async (req, res) => {
 
     if (req.body.reply) {
       reply.reply = req.body.reply;
+      reply.edited = true
     }
 
     await reply.save();
@@ -178,9 +179,9 @@ export const getAllReplies = async (req, res) => {
   const skip = (page - 1) * limit;
 
   try {
-    const filter = parentId ? { parentId } : {};
+    const filter = parentId ? { "parentId.id": parentId } : {};
     const replies = await Reply.find(filter)
-    .populate({
+      .populate({
         path: "parentId.id",
         model: ["Comment", "Reply"],
       })
@@ -222,7 +223,7 @@ export const toggleLike = async (req, res) => {
     if (!theUser) return res.status(404).json({ message: "User not found" });
 
     // Find the event by ID
-    const reply = await Comment.findById(id);
+    const reply = await Reply.findById(id);
     if (!reply) return res.status(404).json({ message: "Reply not found" });
 
     // Check if the user has already liked the event
@@ -241,12 +242,12 @@ export const toggleLike = async (req, res) => {
     // Save the updated reply
     await reply.save();
 
-    // Populate the event with related data
+    // Populate the reply with related data
     const toggledReply = await Reply.findById(reply._id).populate(
       "likes childReplies user"
     );
 
-    // Return the updated event along with the total like count
+    // Return the updated reply along with the total like count
     return res.status(200).json({
       reply: toggledReply,
       totalLikes: toggledReply.likes.length,

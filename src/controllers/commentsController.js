@@ -61,6 +61,7 @@ export const updateComment = async (req, res) => {
 
     if (req.body.comment) {
       comment.comment = req.body.comment;
+      comment.edited = true;
     }
 
     await comment.save();
