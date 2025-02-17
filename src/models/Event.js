@@ -34,7 +34,7 @@ const eventSchema = new mongoose.Schema(
       enum: ["scheduled", "ongoing", "completed", "cancelled"], // Event status
       default: "scheduled", // Default status when creating a new event
     },
-    access: { type: string, enum: ["private", "public"] },
+    access: { type: String, enum: ["private", "public"] },
     accessOnlyTo: {
       type: [
         {

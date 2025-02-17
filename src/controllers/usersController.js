@@ -45,8 +45,7 @@ export const getUserById = async (req, res) => {
     const user = await User.findOne({ _id: id });
 
     if (!user) {
-      res.status(404).json({ message: "User not found" });
-      return;
+      return res.status(404).json({ message: "User not found" });
     }
 
     res.status(200).json(user);
@@ -84,11 +83,8 @@ export const updateUserById = async (req, res) => {
     // Handle image uploads
 
     let profileImageData;
-    if (req.files?.profileImage?.[0]) {
-      profileImageData = await removeAddFileUpload(
-        req.files?.profileImage?.[0],
-        user.profileImage
-      );
+    if (req.file) {
+      profileImageData = await removeAddFileUpload(req.file, user.profileImage);
     }
 
     // Prepare updated data

@@ -48,6 +48,7 @@ const io = new Server(httpServer, {
 });
 
 // Middleware
+app.use(express.json());
 app.use(cors({ origin: "*" }));
 
 // Routes

@@ -16,23 +16,16 @@ import uploadImage from "../helpers/addImageHelper.js";
 export const register = async (req, res) => {
   const { error } = validateRegisterUser(req.body);
   if (error) {
-    res.status(400).json({ message: error.details[0].message });
-    return;
+    return res.status(400).json({ message: error.details[0].message });
   }
 
-  const {
-    email,
-    password,
-    profileImage,
-    ...rest
-  } = req.body;
+  const { email, password, profileImage, ...rest } = req.body;
 
   try {
     // Check if email already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      res.status(400).json({ message: "Email already exists" });
-      return;
+      return res.status(400).json({ message: "Email already exists" });
     }
 
     // Hash the password
@@ -41,14 +34,12 @@ export const register = async (req, res) => {
     const defaultImagesData = { url: "", publicId: null };
     let profileImageData;
 
-    if (req.files?.profileImage?.[0]) {
-      try {
-        profileImageData = req.files?.profileImage?.[0]
-          ? await uploadImage(req.files?.profileImage?.[0])
-          : defaultImagesData;
-      } catch (err) {
-        return res.status(400).json({ message: err.message });
-      }
+    try {
+      profileImageData = req.file
+        ? await uploadImage(req.file)
+        : defaultImagesData;
+    } catch (err) {
+      return res.status(400).json({ message: err.message });
     }
 
     const userData = {
@@ -77,10 +68,10 @@ export const register = async (req, res) => {
    * @access  public
    ------------------------------------------------*/
 export const login = async (req, res) => {
+
   const { error } = validateLoginUser(req.body);
   if (error) {
-    res.status(400).json({ message: error.details[0].message });
-    return;
+    return res.status(400).json({ message: error.details[0].message });
   }
 
   const { email, password } = req.body;
@@ -88,14 +79,12 @@ export const login = async (req, res) => {
   try {
     const user = await User.findOne({ email });
     if (!user) {
-      res.status(400).json({ message: "Invalid email or password" });
-      return;
+      return res.status(400).json({ message: "Invalid email or password" });
     }
 
     const validPassword = await bcrypt.compare(password, user.password);
     if (!validPassword) {
-      res.status(400).json({ message: "Invalid email or password" });
-      return;
+      return res.status(400).json({ message: "Invalid email or password" });
     }
 
     const token = jwt.sign(
