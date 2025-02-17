@@ -4,6 +4,7 @@ import Event, {
 } from "../models/Event.js";
 import User from "../models/User.js";
 import Comment from "../models/Comment.js";
+import uploadFile from "../helpers/addVedioImageHelper.js";
 
 /**-----------------------------------------------
  * @desc    Create a new Event
@@ -13,15 +14,30 @@ import Comment from "../models/Comment.js";
  ------------------------------------------------*/
 export const createEvent = async (req, res) => {
   const userId = req.user.id;
-  const host = await User.findById(userId);
-  if (!host) return res.status(404).json({ message: "User Not Found" });
-
+  const user = await User.findById(userId);
+  if (!user) return res.status(404).json({ message: "User Not Found" });
+  const host = userId;
   req.body = { ...req.body, host };
   const { error } = validateCreateEvent(req.body);
   if (error) return res.status(400).json({ message: error.details[0].message });
 
+  const { content, ...rest } = req.body;
   try {
-    const createdEvent = await Event.create(req.body);
+    // Initialize images
+    const defaultContentData = { url: "", publicId: null, type: null };
+    let contentData;
+
+    try {
+      contentData = req.file ? await uploadFile(req.file) : defaultContentData;
+    } catch (err) {
+      return res.status(400).json({ message: err.message });
+    }
+
+    const eventData = {
+      content: contentData,
+      ...rest,
+    };
+    const createdEvent = await Event.create(eventData);
     const event = await Event.findById(createdEvent._id).populate(
       "host accessOnlyTo participants"
     );
@@ -390,10 +406,8 @@ export const toggleLike = async (req, res) => {
       event: toggledEvent,
       totalLikes: toggledEvent.likes.length,
     });
-
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: "Server Error" });
   }
 };
-

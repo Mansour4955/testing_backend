@@ -13,8 +13,9 @@ const eventSchema = new mongoose.Schema(
     content: {
       url: { type: String, required: true },
       publicId: { type: String, default: null },
-      type: { type: String, required: true, enum: ["image", "video"] },
+      type: { type: String, required: true, enum: ["image", "video"], default: null },
       _id: false,
+
     },
     category: {
       type: String,
@@ -34,7 +35,7 @@ const eventSchema = new mongoose.Schema(
       enum: ["scheduled", "ongoing", "completed", "cancelled"], // Event status
       default: "scheduled", // Default status when creating a new event
     },
-    access: { type: String, enum: ["private", "public"] },
+    access: { type: String, enum: ["private", "public"], required: true},
     accessOnlyTo: {
       type: [
         {
