@@ -6,6 +6,7 @@ import User from "../models/User.js";
 import Comment from "../models/Comment.js";
 import uploadFile from "../helpers/addVedioImageHelper.js";
 import removeAddVideoImageUpload from "../helpers/removeAddVideoImageHelper.js";
+import sendEmail from "../helpers/emailService.js";
 
 /**-----------------------------------------------
  * @desc    Create a new Event
@@ -334,6 +335,35 @@ export const joinEvent = async (req, res) => {
     event.participants.push(req.user.id);
     await event.save();
 
+    const user = await User.findById(req.user.id);
+    // Send email notification
+    const eventLink = `${process.env.CLIENT_URL}/events/${event._id}`; // Adjust URL if needed
+
+    // Send email notification to the joined user
+    await sendEmail(
+      user.email,
+      "Welcome to the Event!",
+      `Hi ${user.firstName},\n\nYou've successfully joined the event: ${event.description}.\n\nClick here to view the event: ${eventLink}\n\nSee you there!`
+    );
+
+    // Notify the host
+    await sendEmail(
+      event.host.email,
+      "New member joined your event!",
+      `Hi ${event.host.firstName},\n\n${user.firstName} successfully joined your event: ${event.description}.\n\nCheck the event here: ${eventLink}`
+    );
+
+    // Notify other participants **except** the joined user
+    event.participants
+      .filter((participant) => participant._id.toString() !== req.user.id) // Exclude the joined user
+      .forEach(async (participant) => {
+        await sendEmail(
+          participant.email,
+          "New member joined the event!",
+          `Hi ${participant.firstName},\n\n${user.firstName} joined the event: ${event.description}.\n\nView the event here: ${eventLink}`
+        );
+      });
+
     res.status(200).json({ message: "Successfully joined the event", event });
   } catch (err) {
     res
@@ -368,6 +398,14 @@ export const leaveEvent = async (req, res) => {
       (user) => user._id.toString() !== req.user.id
     );
     await event.save();
+
+    const user = await User.findById(req.user.id);
+    // Send email notification
+    await sendEmail(
+      user.email,
+      "Leaving the Event!",
+      `Hi ${user.firstName},\n\nYou've successfully leaved the event: ${event.description}. !`
+    );
 
     res.status(200).json({ message: "Successfully left the event", event });
   } catch (err) {
