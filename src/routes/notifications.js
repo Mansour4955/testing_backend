@@ -1,7 +1,7 @@
 import express from "express";
 import { verifyToken } from "../middlewares/verifyToken.js";
 import { validateObjectId } from "../middlewares/validateObjectId.js";
-import { createNotification, deleteNotification, getNotificationById, getNotifications, updateNotification } from "../controllers/notificationsController.js";
+import { createNotification, getNotificationById, getNotifications, updateNotification } from "../controllers/notificationsController.js";
 
 const router = express.Router();
 
@@ -16,10 +16,10 @@ router.patch(
   updateNotification
 );
 
-router.delete(
-  "/:id",
-  validateObjectId,
-  verifyToken,
-  deleteNotification
-);
+// router.delete(
+//   "/:id",
+//   validateObjectId,
+//   verifyToken,
+//   deleteNotification
+// );
 export default router;

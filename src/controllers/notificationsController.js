@@ -18,7 +18,7 @@ export const createNotification = async (req, res) => {
   const id = req.user.id;
   const user = await User.findOne({ _id: id });
   if (!user) return res.status(400).json({ message: "User not found" });
-  const actor = id
+  const actor = id;
   req.body = { ...req.body, actor };
   const { error } = validateCreateNotification(req.body);
   if (error) return res.status(400).json({ error: error.details[0].message });
@@ -29,7 +29,7 @@ export const createNotification = async (req, res) => {
     res.status(201).json({ message: "Notification Created successfully" });
     if (Array.isArray(req.body.recipient) && req.body.recipient.length > 0) {
       req.body.recipient.forEach((singleRecipientId) => {
-        const theUserId = singleRecipientId
+        const theUserId = singleRecipientId;
         const recipientSocketId = userToSocketMap[theUserId]; // Get the recipient's socket ID
         if (recipientSocketId) {
           io.to(recipientSocketId).emit("newNotification", {
@@ -59,9 +59,7 @@ export const getNotifications = async (req, res) => {
     const notifications = await Notification.find({
       $and: [
         {
-          $or: [
-            { recipient: req.user.id }, // For arrays of strings
-          ],
+          $or: [{ recipient: { $in: [req.user.id] } }],
         },
         {
           $or: [
@@ -70,9 +68,7 @@ export const getNotifications = async (req, res) => {
               $and: [
                 { isNotificationDeleted: true }, // If deleted
                 {
-                  peopleDeletedTheNotification: {
-                    $not: { $elemMatch: { id: req.user.id } }, // Ensure the user's ID is NOT in the array
-                  },
+                  peopleDeletedTheNotification: { $ne: req.user.id },
                 },
               ],
             },
@@ -85,7 +81,7 @@ export const getNotifications = async (req, res) => {
       .limit(limit) // Limit the number of results to 40
       .populate({
         path: "actor",
-        model: ["User"],
+        model: "User",
       })
       .populate({
         path: "reference.referenceId",
@@ -97,9 +93,7 @@ export const getNotifications = async (req, res) => {
     const totalNotifications = await Notification.countDocuments({
       $and: [
         {
-          $or: [
-            { recipient: req.user.id }, // For arrays of strings
-          ],
+          $or: [{ recipient: { $in: [req.user.id] } }],
         },
         {
           $or: [
@@ -108,9 +102,7 @@ export const getNotifications = async (req, res) => {
               $and: [
                 { isNotificationDeleted: true }, // If deleted
                 {
-                  peopleDeletedTheNotification: {
-                    $not: { $elemMatch: { id: req.user.id } }, // Ensure the user's ID is NOT in the array
-                  },
+                  peopleDeletedTheNotification: { $ne: req.user.id },
                 },
               ],
             },
@@ -157,12 +149,16 @@ export const getNotificationById = async (req, res) => {
       })
       .lean();
 
-    if (!notification) {
-      return res
-        .status(404)
-        .json({
-          error: "Notification not found or not intended for this user",
-        });
+    if (
+      !notification ||
+      (notification.isNotificationDeleted &&
+        notification.peopleDeletedTheNotification.find(
+          (user) => user._id.toString() === req.user.id
+        ))
+    ) {
+      return res.status(404).json({
+        error: "Notification not found or not intended for this user",
+      });
     }
 
     res.status(200).json(notification);
@@ -197,49 +193,59 @@ export const updateNotification = async (req, res) => {
       { new: true } // return the updated document
     );
 
-    if (!notification) {
-      return res
-        .status(404)
-        .json({
-          error: "Notification not found or not intended for this user",
-        });
+    if (
+      !notification ||
+      (notification.isNotificationDeleted &&
+        notification.peopleDeletedTheNotification.includes(req.user.id))
+    ) {
+      return res.status(404).json({
+        error: "Notification not found or not intended for this user",
+      });
     }
-
-    res.status(200).json(notification);
+    const updatedNotification = await Notification.findById(notification._id)
+      .populate({
+        path: "actor",
+        model: ["User"],
+      })
+      .populate({
+        path: "reference.referenceId",
+        model: ["Comment", "Reply", "Event"],
+      });
+    res.status(200).json(updatedNotification);
   } catch (err) {
     res.status(500).json({ error: "Failed to update notification" });
   }
 };
 
-/**-----------------------------------------------
- * @desc    Delete a specific notification
- * @route   /api/notifications/:id
- * @method  DELETE
- * @access  private (only the user who created the notification)
- ------------------------------------------------*/
-export const deleteNotification = async (req, res) => {
-  const { id } = req.params;
+// /**-----------------------------------------------
+//  * @desc    Delete a specific notification
+//  * @route   /api/notifications/:id
+//  * @method  DELETE
+//  * @access  private (only the user who created the notification)
+//  ------------------------------------------------*/
+// export const deleteNotification = async (req, res) => {
+//   const { id } = req.params;
 
-  try {
-    // Find the notification by ID
-    const notification = await Notification.findById(id);
-    if (!notification) {
-      return res.status(404).json({ error: "Notification not found" });
-    }
+//   try {
+//     // Find the notification by ID
+//     const notification = await Notification.findById(id);
+//     if (!notification) {
+//       return res.status(404).json({ error: "Notification not found" });
+//     }
 
-    // Check if the user is authorized to delete this notification
-    if (req.user.id !== notification.actor.toString()) {
-      return res
-        .status(403)
-        .json({ error: "You are not authorized to delete this notification" });
-    }
+//     // Check if the user is authorized to delete this notification
+//     if (req.user.id !== notification.actor.toString()) {
+//       return res
+//         .status(403)
+//         .json({ error: "You are not authorized to delete this notification" });
+//     }
 
-    // Delete the notification
-    await Notification.findByIdAndDelete(id);
+//     // Delete the notification
+//     await Notification.findByIdAndDelete(id);
 
-    // Respond with a success message
-    res.status(200).json({ message: "Notification deleted successfully" });
-  } catch (err) {
-    res.status(500).json({ error: "Failed to delete notification" });
-  }
-};
+//     // Respond with a success message
+//     res.status(200).json({ message: "Notification deleted successfully" });
+//   } catch (err) {
+//     res.status(500).json({ error: "Failed to delete notification" });
+//   }
+// };
