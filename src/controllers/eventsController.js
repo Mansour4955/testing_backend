@@ -43,7 +43,17 @@ export const createEvent = async (req, res) => {
     const event = await Event.findById(createdEvent._id).populate(
       "host accessOnlyTo participants"
     );
-
+    // Notify all users in accessOnlyTo array that they are allowed to access the private event
+    if (event.access === "private") {
+      const eventLink = `${process.env.CLIENT_URL}/events/${event._id}`; // Adjust URL if needed
+      event.accessOnlyTo.forEach(async (user) => {
+        await sendEmail(
+          user.email,
+          "New private event that you have access to join!",
+          `Hi ${user.firstName},\n\n${event.host.firstName} ${event.host.lastName} gave you access to join the private event: ${event.description}.\n\nView the event here: ${eventLink}`
+        );
+      });
+    }
     res.status(201).json(event);
   } catch (err) {
     res

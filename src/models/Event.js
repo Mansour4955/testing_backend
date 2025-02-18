@@ -11,11 +11,14 @@ const eventSchema = new mongoose.Schema(
     host: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     participants: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     content: {
-      url: { type: String, required: true },
+      url: { type: String },
       publicId: { type: String, default: null },
-      type: { type: String, required: true, enum: ["image", "video"], default: null },
+      type: {
+        type: String,
+        enum: ["image", "video"],
+        default: null,
+      },
       _id: false,
-
     },
     category: {
       type: String,
@@ -35,7 +38,7 @@ const eventSchema = new mongoose.Schema(
       enum: ["scheduled", "ongoing", "completed", "cancelled"], // Event status
       default: "scheduled", // Default status when creating a new event
     },
-    access: { type: String, enum: ["private", "public"], required: true},
+    access: { type: String, enum: ["private", "public"], required: true },
     accessOnlyTo: {
       type: [
         {
