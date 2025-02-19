@@ -30,7 +30,7 @@ const photoUpload = multer({
       cb(new Error("Only image files are allowed!"), false);
     }
   },
-  limits: { fileSize: 1024 * 1024 }, // 1 megabyte
+  limits: { fileSize: 5 * 1024 * 1024 }, // 1 megabyte
 });
 
 export default photoUpload;

@@ -17,7 +17,7 @@ export const getAllUsers = async (req, res) => {
 
     const skip = (page - 1) * limit; // Calculate the number of documents to skip
 
-    const users = await User.find().skip(skip).limit(limit); // Fetch users with pagination
+    const users = await User.find().skip(skip).limit(limit).select("-password"); // Fetch users with pagination
     const totalUsers = await User.countDocuments(); // Get the total number of users
     const totalPages = Math.ceil(totalUsers / limit); // Calculate total pages
 
@@ -42,7 +42,7 @@ export const getUserById = async (req, res) => {
   const { id } = req.params;
 
   try {
-    const user = await User.findOne({ _id: id });
+    const user = await User.findOne({ _id: id }).select("-password");
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
