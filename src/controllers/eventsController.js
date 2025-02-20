@@ -201,8 +201,13 @@ export const getAllEvents = async (req, res) => {
       case "private":
         filterQuery = {
           $or: [
-            { host: currentUserId },
-            { accessOnlyTo: { $in: [currentUserId] } },
+            { host: currentUserId, access: "private" }, // User is the host & event is private
+            {
+              $and: [
+                { accessOnlyTo: { $in: [currentUserId] } }, // User is in the access list
+                { access: "private" }, // Event must be private
+              ],
+            },
           ],
         };
         break;
