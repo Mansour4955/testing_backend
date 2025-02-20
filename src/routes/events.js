@@ -17,9 +17,9 @@ import fileUpload from "../middlewares/fileUpload.js";
 const router = express.Router();
 
 router.post("/", verifyToken, fileUpload.single("content"), createEvent);
-router.get("/",verifyToken, getAllEvents);
+router.get("/", verifyToken, getAllEvents);
 router.get("/public", getAllPublicEvents);
-router.get("/:id", validateObjectId, getEventById);
+router.get("/:id", verifyToken, validateObjectId, getEventById);
 
 router.patch(
   "/:id",

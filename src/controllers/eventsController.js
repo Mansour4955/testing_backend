@@ -145,7 +145,6 @@ export const getEventById = async (req, res) => {
   try {
     const event = await Event.findById(req.params.id)
       .populate("host accessOnlyTo participants likes")
-      .lean();
 
     if (!event) return res.status(404).json({ message: "Event not found" });
     if (event.access === "private") {
@@ -153,7 +152,7 @@ export const getEventById = async (req, res) => {
       const isUserAllowdToSeeThisEvent = event.accessOnlyTo.find(
         (user) => user._id.toString() === req.user.id
       );
-      if (!isUserAllowdToSeeThisEvent) {
+      if (!isUserAllowdToSeeThisEvent && event.host._id.toString() !== req.user.id) {
         return res
           .status(403)
           .json({ message: "Unauthorized to view this private event" });
