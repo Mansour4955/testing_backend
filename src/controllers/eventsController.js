@@ -45,7 +45,7 @@ export const createEvent = async (req, res) => {
     );
     // Notify all users in accessOnlyTo array that they are allowed to access the private event
     if (event.access === "private") {
-      const eventLink = `${process.env.CLIENT_URL}/events/${event._id}`; // Adjust URL if needed
+      const eventLink = `${process.env.FRONTEND_URL}/events/${event._id}`; // Adjust URL if needed
       event.accessOnlyTo.forEach(async (user) => {
         await sendEmail(
           user.email,
@@ -351,7 +351,7 @@ export const joinEvent = async (req, res) => {
 
     const user = await User.findById(req.user.id);
     // Send email notification
-    const eventLink = `${process.env.CLIENT_URL}/events/${event._id}`; // Adjust URL if needed
+    const eventLink = `${process.env.FRONTEND_URL}/events/${event._id}`; // Adjust URL if needed
 
     // Send email notification to the joined user
     await sendEmail(
