@@ -43,13 +43,13 @@ app.use(xss());
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
-    origin: "*", // Allow all origins (update for production)
+    origin: process.env.FRONTEND_URL, // Allow all origins (update for production)
   },
 });
 
 // Middleware
 app.use(express.json());
-app.use(cors({ origin: "*" }));
+app.use(cors({ origin: process.env.FRONTEND_URL }));
 
 // Routes
 app.use("/api/user-auth", UsersAuth);
