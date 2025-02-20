@@ -51,6 +51,9 @@ const io = new Server(httpServer, {
 app.use(express.json());
 app.use(cors({ origin: process.env.FRONTEND_URL }));
 
+app.get("/", (req, res) => {
+  res.send("Welcome to the Backend !!!!");
+});
 // Routes
 app.use("/api/user-auth", UsersAuth);
 app.use("/api/users", Users);
